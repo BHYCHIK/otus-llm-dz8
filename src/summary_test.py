@@ -35,7 +35,7 @@ judge_llm = llm_factory('qwen-3-32b', client=client, max_tokens=10000, temperatu
 
 class ExperimentResult(BaseModel):
     faithfulness_score: float
-    faithfullness_reason: str
+    faithfulness_reason: str
 
 
 faithfullness = Faithfulness(llm=judge_llm)
@@ -52,7 +52,7 @@ async def get_faithfulness(row, summarizer):
 
     return ExperimentResult(
         faithfulness_score=faith_result.value,
-        faithfullness_reason = faith_result.reason
+        faithfulness_reason = faith_result.reason
     )
 
 async def test_summorizer():
