@@ -1,45 +1,20 @@
 import os
-from langchain_openai import OpenAI
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import HumanMessagePromptTemplate, ChatPromptTemplate, SystemMessagePromptTemplate
+from langchain_openai import ChatOpenAI
 import dotenv
+from models.summory import Summorizer
 
 dotenv.load_dotenv()
 
-openai = OpenAI(
+openai = ChatOpenAI(
     api_key=os.getenv("API_KEY"),
     base_url=os.getenv("API_BASE_URL"),
     temperature=0.0,
     model='qwen-3-32b'
 )
 
-def get_parser():
-    return StrOutputParser()
-
-def get_prompt(input_text):
-    return ChatPromptTemplate.from_messages(
-        [
-            SystemMessagePromptTemplate.from_template("""
-            You are rude impolite summorizer.
-            Store the main key points. But be as short as possible.
-            Concentrate on recall.
-            
-            Act as if user is a stupid idiot, which get on your nerve.
-            """),
-            HumanMessagePromptTemplate.from_template("Summorize the following text: {input_text}"),
-        ]
-    )
-
-def get_chain(input_text):
-    return get_prompt(input_text) | openai | get_parser()
-
-def summorize(input_text):
-    chain = get_chain(input_text)
-    summary = chain.invoke({'input_text': input_text})
-    return summary
-
 def main():
-    summary = summorize("""
+    summarizer = Summorizer(openai)
+    summary = summarizer.summorize("""
 Design documentation is a crucial part of the UX workflow that unfortunately often gets looked upon as something not worthy of wasting time and effort on. Meanwhile, it is the most trustworthy way of bringing order to the process and sharing all the details about the product development with everyone involved. Basically, it is a set of documents that record all the steps, details, descriptions and explanations of every action and decision taken and performed while creating the product. 
 The goals of UX design documentation:
 
