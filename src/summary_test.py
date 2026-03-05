@@ -1,5 +1,6 @@
 import asyncio
 
+from nltk.translate import bleu_score
 from ragas import Dataset
 from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness, SummaryScore, ResponseGroundedness
@@ -43,6 +44,7 @@ class ExperimentResult(BaseModel):
     rouge2_score: float
     rougeL_score: float
     rougeLsum_score: float
+    bleu_score: float
     time_to_summarize: float
     time_to_calc_summary_score: float
     time_to_calc_faithfulness: float
@@ -99,6 +101,9 @@ async def get_summary_scores(row, summarizer, lock):
     rouge_scorer = evaluate.load('rouge')
     rouge = rouge_scorer.compute(predictions=[summary], references=[row['ground_truth']])
 
+    bleu_scorer = evaluate.load('bleu')
+    bleu_scorer = bleu_scorer.compute(predictions=[summary], references=[row['ground_truth']])
+
     return ExperimentResult(
         faithfulness_score=faith_result.value,
         summary_score=1.0,#summary_score_result.value, #TODO: Uncomment before prod
@@ -107,6 +112,7 @@ async def get_summary_scores(row, summarizer, lock):
         rouge2_score=rouge['rouge2'],
         rougeL_score=rouge['rougeL'],
         rougeLsum_score=rouge['rougeLsum'],
+        bleu_score=bleu_scorer.value,
         time_to_summarize=time_to_summarize,
         time_to_calc_summary_score=time_to_calc_summary_score,
         time_to_calc_faithfulness=time_to_calc_faithfulness,
@@ -129,6 +135,7 @@ async def test_summarizer():
     rouge2_score = exp_df['rouge1_score'].mean()
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
+    bleu_score = exp_df['bleu_score'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -137,6 +144,7 @@ async def test_summarizer():
     print('Rouge2 score mean ', rouge2_score)
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
+    print('Bleu score mean ', bleu_score)
 
     assert faithfulness_score > 0.96
     assert summary_score > 0.99999
@@ -161,6 +169,7 @@ async def test_missy_summarizer():
     rouge2_score = exp_df['rouge1_score'].mean()
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
+    bleu_score = exp_df['bleu_score'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -169,6 +178,7 @@ async def test_missy_summarizer():
     print('Rouge2 score mean ', rouge2_score)
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
+    print('Bleu score mean ', bleu_score)
 
     assert faithfulness_score > 0.82
     assert summary_score > 0.99999
