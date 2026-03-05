@@ -1,14 +1,15 @@
 stages:
   - test
 
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+  PYTHONUNBUFFERED: "1"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
 default:
   image: python:3.13-slim
   tags: ["docker"]
-  variables:
-    PIP_DISABLE_PIP_VERSION_CHECK: "1"
-    PYTHONDONTWRITEBYTECODE: "1"
-    PYTHONUNBUFFERED: "1"
-    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   cache:
     key:
       files:
