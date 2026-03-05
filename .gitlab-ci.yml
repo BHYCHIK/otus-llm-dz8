@@ -18,6 +18,6 @@ ragas_tests:
   artifacts:
     when: always
     reports:
-      - junit: report.xml
+      junit: report.xml
     paths:
       - report.xml
