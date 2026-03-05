@@ -14,8 +14,8 @@ ragas_tests:
     key:
       files:
         - requirements.txt
-      paths:
-        - .cache/pip
+    paths:
+      - .cache/pip/
     policy: pull-push
   before_script:
     - python -V
