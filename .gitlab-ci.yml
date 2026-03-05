@@ -9,6 +9,14 @@ ragas_tests:
     PIP_DISABLE_PIP_VERSION_CHECK: "1"
     PYTHONDONTWRITEBYTECODE: "1"
     PYTHONUNBUFFERED: "1"
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  cache:
+    key:
+      files:
+        - requirements.txt
+      paths:
+        - .cache/pip
+    policy: pull-push
   before_script:
     - python -V
     - pip install -U pip
