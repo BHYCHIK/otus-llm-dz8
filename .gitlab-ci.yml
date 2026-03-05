@@ -27,9 +27,9 @@ test:
   script:
     - pip install pytest
     #- pytest -s src/summary_test.py --junitxml=report.xml
-  artifacts:
-    when: always
-    reports:
-      junit: report.xml
-    paths:
-      - report.xml
+  #artifacts:
+  #  when: always
+  #  reports:
+  #    junit: report.xml
+  #  paths:
+  #    - report.xml
