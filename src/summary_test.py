@@ -105,7 +105,12 @@ async def get_summary_scores(row, summarizer, lock):
     bleu = bleu_scorer.compute(predictions=[summary], references=[row['ground_truth']])
 
     semantic_similarity_scorer= evaluate.load('bertscore')
-    semantic_similarity = semantic_similarity_scorer.compute(predictions=[summary], references=[row['ground_truth']])
+    semantic_similarity = semantic_similarity_scorer.compute(predictions=[summary],
+                                                             references=[row['ground_truth']],
+                                                             model_type="xlm-roberta-large",
+                                                             lang="en")
+
+    print(semantic_similarity)
 
     return ExperimentResult(
         faithfulness_score=faith_result.value,

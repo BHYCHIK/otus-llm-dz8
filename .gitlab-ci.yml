@@ -11,12 +11,16 @@ default:
   image: python:3.13-slim
   tags: ["docker"]
   cache:
-    key:
-      files:
-        - requirements.txt
-    paths:
-      - .cache/pip/
-    policy: pull-push
+    - key:
+        files:
+          - requirements.txt
+      paths:
+        - .cache/pip/
+        - .cache/huggingface/
+    - key: "hf-cache-xlm-roberta-large"
+      paths:
+        - .cache/huggingface/
+      policy: pull-push
   before_script:
     - python -V
     - pip install -U pip
