@@ -6,7 +6,9 @@ services:
     shm_size: "256m"
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://gitlab.local'
+        external_url 'http://gitlab'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
     ports:
       - "8080:80"
@@ -27,6 +29,8 @@ services:
     volumes:
       - ./gitlab-runner/config:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      LOG_LEVEL: debug
     networks:
       - gitlabnet
 
