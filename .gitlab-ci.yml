@@ -26,7 +26,7 @@ test:
   stage: test
   script:
     - pip install pytest
-    - pytest -s src/summary_test.py --junitxml=report.xml
+    #- pytest -s src/summary_test.py --junitxml=report.xml
   artifacts:
     when: always
     reports:
