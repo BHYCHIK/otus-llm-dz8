@@ -1,3 +1,10 @@
 .env
 .venv
 .idea
+__pycache__/
+*.pyc__pycache__/
+*.pyc
+gitlab/gitlab-runner/
+gitlab/gitlab_config/
+gitlab/gitlab_data/
+gitlab/gitlab_logs/
