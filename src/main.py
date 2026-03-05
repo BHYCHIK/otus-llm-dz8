@@ -1,3 +1,4 @@
+import asyncio
 import os
 from langchain_openai import ChatOpenAI
 import dotenv
@@ -12,9 +13,9 @@ openai = ChatOpenAI(
     model='qwen-3-32b'
 )
 
-def main():
+async def main():
     summarizer = Summarizer(openai)
-    summary = summarizer.summarize("""
+    summary = await summarizer.summarize("""
 Design documentation is a crucial part of the UX workflow that unfortunately often gets looked upon as something not worthy of wasting time and effort on. Meanwhile, it is the most trustworthy way of bringing order to the process and sharing all the details about the product development with everyone involved. Basically, it is a set of documents that record all the steps, details, descriptions and explanations of every action and decision taken and performed while creating the product. 
 The goals of UX design documentation:
 
@@ -86,4 +87,4 @@ Design documentation plays an important role in the UX design, and it should be 
     print(summary)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

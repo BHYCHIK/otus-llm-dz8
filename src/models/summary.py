@@ -24,22 +24,6 @@ class Summarizer():
         summary = await chain.ainvoke({'input_text': input_text})
         return summary
 
-
-class RudeSummarizer(Summarizer):
-    def _get_prompt(self, input_text):
-        return ChatPromptTemplate.from_messages(
-            [
-                SystemMessagePromptTemplate.from_template("""
-                You are rude impolite summarizer.
-                Store the main key points. But be as short as possible.
-                Concentrate on recall.
-
-                Act as if user is a stupid idiot, which get on your nerve.
-                """),
-                HumanMessagePromptTemplate.from_template("Summorize the following text: {input_text}"),
-            ]
-        )
-
 class MissySummarizer(Summarizer):
     def _get_prompt(self, input_text):
         return ChatPromptTemplate.from_messages(

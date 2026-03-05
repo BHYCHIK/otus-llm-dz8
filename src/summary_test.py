@@ -1,6 +1,5 @@
 import asyncio
 
-from nltk.translate import bleu_score
 from ragas import Dataset
 from ragas.llms import llm_factory
 from ragas.metrics.collections import Faithfulness, SummaryScore, ResponseGroundedness
@@ -8,7 +7,7 @@ from ragas.experiment import experiment
 import dotenv
 from langchain_openai import ChatOpenAI
 
-from models.summary import Summarizer, MissySummarizer, RudeSummarizer
+from models.summary import Summarizer, MissySummarizer
 import os
 from openai import AsyncOpenAI
 from pydantic import BaseModel
@@ -45,6 +44,7 @@ class ExperimentResult(BaseModel):
     rougeL_score: float
     rougeLsum_score: float
     bleu_score: float
+    semantic_similarity: float
     time_to_summarize: float
     time_to_calc_summary_score: float
     time_to_calc_faithfulness: float
@@ -102,7 +102,10 @@ async def get_summary_scores(row, summarizer, lock):
     rouge = rouge_scorer.compute(predictions=[summary], references=[row['ground_truth']])
 
     bleu_scorer = evaluate.load('bleu')
-    bleu_scorer = bleu_scorer.compute(predictions=[summary], references=[row['ground_truth']])
+    bleu = bleu_scorer.compute(predictions=[summary], references=[row['ground_truth']])
+
+    semantic_similarity_scorer= evaluate.load('bertscore')
+    semantic_similarity = semantic_similarity_scorer.compute(predictions=[summary], references=[row['ground_truth']])
 
     return ExperimentResult(
         faithfulness_score=faith_result.value,
@@ -112,7 +115,8 @@ async def get_summary_scores(row, summarizer, lock):
         rouge2_score=rouge['rouge2'],
         rougeL_score=rouge['rougeL'],
         rougeLsum_score=rouge['rougeLsum'],
-        bleu_score=bleu_scorer.value,
+        bleu_score=bleu.value,
+        semantic_similarity=semantic_similarity.value,
         time_to_summarize=time_to_summarize,
         time_to_calc_summary_score=time_to_calc_summary_score,
         time_to_calc_faithfulness=time_to_calc_faithfulness,
@@ -136,6 +140,7 @@ async def test_summarizer():
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
     bleu_score = exp_df['bleu_score'].mean()
+    semantic_similarity = exp_df['semantic_similarity'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -145,6 +150,7 @@ async def test_summarizer():
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
     print('Bleu score mean ', bleu_score)
+    print('Semantic similarity mean ', semantic_similarity)
 
     assert faithfulness_score > 0.96
     assert summary_score > 0.99999
@@ -170,6 +176,7 @@ async def test_missy_summarizer():
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
     bleu_score = exp_df['bleu_score'].mean()
+    semantic_similarity = exp_df['semantic_similarity'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -179,6 +186,7 @@ async def test_missy_summarizer():
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
     print('Bleu score mean ', bleu_score)
+    print('Semantic similarity mean ', semantic_similarity)
 
     assert faithfulness_score > 0.82
     assert summary_score > 0.99999
