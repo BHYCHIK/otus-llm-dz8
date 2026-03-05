@@ -1,7 +1,7 @@
 import os
 from langchain_openai import ChatOpenAI
 import dotenv
-from models.summory import Summorizer
+from models.summary import Summarizer
 
 dotenv.load_dotenv()
 
@@ -13,8 +13,8 @@ openai = ChatOpenAI(
 )
 
 def main():
-    summarizer = Summorizer(openai)
-    summary = summarizer.summorize("""
+    summarizer = Summarizer(openai)
+    summary = summarizer.summarize("""
 Design documentation is a crucial part of the UX workflow that unfortunately often gets looked upon as something not worthy of wasting time and effort on. Meanwhile, it is the most trustworthy way of bringing order to the process and sharing all the details about the product development with everyone involved. Basically, it is a set of documents that record all the steps, details, descriptions and explanations of every action and decision taken and performed while creating the product. 
 The goals of UX design documentation:
 

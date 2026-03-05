@@ -1,19 +1,19 @@
 import asyncio
 
-from markdown_it.rules_block import reference
-from ragas import Dataset, EvaluationDataset, evaluate
+from ragas import Dataset
 from ragas.llms import llm_factory
-from ragas.metrics.collections import Faithfulness
+from ragas.metrics.collections import Faithfulness, SummaryScore
 from ragas.experiment import experiment
 import dotenv
 from langchain_openai import ChatOpenAI
-from sqlalchemy.engine import row
 
-from models.summory import Summorizer, MissySummorizer, RudeSummorizer
+from models.summary import Summarizer, MissySummarizer, RudeSummarizer
 import os
 from openai import AsyncOpenAI
-import pandas as pd
 from pydantic import BaseModel
+import time
+
+import evaluate
 
 dotenv.load_dotenv()
 
@@ -23,44 +23,108 @@ openai = ChatOpenAI(
     api_key=os.getenv("API_KEY"),
     base_url=os.getenv("API_BASE_URL"),
     temperature=0.0,
-    model='qwen-3-32b'
+    model='qwen3-coder'
 )
 
 client = AsyncOpenAI(
-    api_key=os.getenv("API_KEY"),
-    base_url=os.getenv("API_BASE_URL"),
+    api_key=os.getenv("JUDGE_API_KEY"),
+    base_url=os.getenv("JUDGE_BASE_URL"),
+    project=os.getenv("JUDGE_PROJECT"),
 )
 
-judge_llm = llm_factory('qwen-3-32b', client=client, max_tokens=10000, temperature=0.0)
+judge_llm = llm_factory(os.getenv("JUDGE_MODEL"), client=client, max_tokens=99000, temperature=0.0)
 
 class ExperimentResult(BaseModel):
     faithfulness_score: float
-    faithfulness_reason: str
+    summary_score: float
+    rouge1_score: float
+    rouge2_score: float
+    rougeL_score: float
+    rougeLsum_score: float
+    time_to_summarize: float
+    time_to_calc_summary_score: float
+    time_to_calc_faithfulness: float
+    context: str
 
 
-faithfullness = Faithfulness(llm=judge_llm)
+faithfulness = Faithfulness(llm=judge_llm)
+summary_score = SummaryScore(llm=judge_llm) #TODO use exapnsive llm LATER
 
 @experiment(ExperimentResult, name_prefix="base_scores")
-async def get_faithfulness(row, summarizer):
-    summary = summarizer.summorize(row['context'])
+async def get_summary_scores(row, summarizer, lock):
+    start = time.time()
 
-    faith_result = await faithfullness.ascore(
+    #async with lock:
+    summary = await summarizer.summarize(row['context'])
+    end = time.time()
+    time_to_summarize = end - start
+
+    start = time.time()
+    #TODO: uncomment, when ready. It is very expensive
+    #summary_score_result_waiter = summary_score.ascore(
+    #    reference_contexts=[row['context']],
+    #    response=summary,
+    #)
+
+    #summary_score_result = await summary_score_result_waiter
+    end = time.time()
+    time_to_calc_summary_score = end - start
+
+    start = time.time()
+    faith_result_waiter = faithfulness.ascore(
         response=summary,
         retrieved_contexts=[row['context']],
         user_input=row['question'],
     )
 
+    faith_result = await faith_result_waiter
+    end = time.time()
+    time_to_calc_faithfulness = end - start
+
+    rouge_scorer = evaluate.load('rouge')
+    rouge = rouge_scorer.compute(predictions=[summary], references=[row['ground_truth']])
+
     return ExperimentResult(
         faithfulness_score=faith_result.value,
-        faithfulness_reason = faith_result.reason
+        summary_score=1.0,#summary_score_result.value, #TODO: Uncomment before prod
+        rouge1_score=rouge['rouge1'],
+        rouge2_score=rouge['rouge2'],
+        rougeL_score=rouge['rougeL'],
+        rougeLsum_score=rouge['rougeLsum'],
+        time_to_summarize=time_to_summarize,
+        time_to_calc_summary_score=time_to_calc_summary_score,
+        time_to_calc_faithfulness=time_to_calc_faithfulness,
+        context=row['context'],
     )
 
-async def test_summorizer():
-    summorizer = Summorizer(openai)
-    exp_result = await get_faithfulness.arun(dataset=ds, name="base_summarizer", summarizer=summorizer)
-    print(exp_result)
-    for exp in exp_result:
-        print(exp)
+async def test_summarizer():
+    summarizer = Summarizer(openai)
+    lock = asyncio.Lock()
+    exp_result = await get_summary_scores.arun(dataset=ds, name="base_summarizer", summarizer=summarizer, lock=lock)
+    exp_df = exp_result.to_pandas()
+    print('Faithfulness mean ', exp_df['faithfulness_score'].mean())
+    print('Summary score mean ', exp_df['summary_score'].mean())
+    print('Rouge1 score mean ', exp_df['rouge1_score'].mean())
+    print('Rouge2 score mean ', exp_df['rouge2_score'].mean())
+    print('RougeL score mean ', exp_df['rougeL_score'].mean())
+    print('RougeLsum score mean ', exp_df['rougeLsum_score'].mean())
+
+
+async def test_missy_summarizer():
+    summarizer = MissySummarizer(openai)
+    lock = asyncio.Lock()
+    exp_result = await get_summary_scores.arun(dataset=ds, name="missy_summarizer", summarizer=summarizer, lock=lock)
+    exp_df = exp_result.to_pandas()
+    print('Faithfulness mean ', exp_df['faithfulness_score'].mean())
+    print('Summary score mean ', exp_df['summary_score'].mean())
+    print('Rouge1 score mean ', exp_df['rouge1_score'].mean())
+    print('Rouge2 score mean ', exp_df['rouge2_score'].mean())
+    print('RougeL score mean ', exp_df['rougeL_score'].mean())
+    print('RougeLsum score mean ', exp_df['rougeLsum_score'].mean())
+
+async def main():
+    await test_summarizer()
+    await test_missy_summarizer()
 
 if __name__ == '__main__':
-    asyncio.run(test_summorizer())
+    asyncio.run(main())
