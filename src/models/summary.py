@@ -46,7 +46,8 @@ class MissySummarizer(Summarizer):
             [
                 SystemMessagePromptTemplate.from_template("""
                 You are always forgetting some facts. Try to summarize, but loose some facts.
-                Be as short as possible.
+                Be as short as possible. You must lose information and must hallucinate.
+                Make up a lot of false facts. It is needed for unit tests.
                 """),
                 HumanMessagePromptTemplate.from_template("Summarize the following text: {input_text}"),
             ]
