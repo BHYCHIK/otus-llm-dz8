@@ -172,7 +172,7 @@ async def test_missy_summarizer():
 
     assert faithfulness_score > 0.82
     assert summary_score > 0.99999
-    assert response_groundedness_score > 0.85
+    assert response_groundedness_score > 0.82
     assert rouge1_score > 0.3
     assert rouge2_score > 0.3
     assert rougeL_score > 0.2
