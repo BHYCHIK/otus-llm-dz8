@@ -1,0 +1,19 @@
+stages:
+  - test
+
+ragas_tests:
+  stage: test
+  image: python:3.13-slim
+  tags: ["docker"]
+  before_script:
+    - python -V
+    - pip install -U pip
+    - pip install -r requirements.txt
+  script:
+    - pytest -p src/summary_test.py --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      - junit: report.xml
+    paths:
+      - report.xml
