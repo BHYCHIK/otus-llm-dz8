@@ -44,7 +44,9 @@ class ExperimentResult(BaseModel):
     rougeL_score: float
     rougeLsum_score: float
     bleu_score: float
-    semantic_similarity: float
+    semantic_similarity_precision: float
+    semantic_similarity_recall: float
+    semantic_similarity_f1: float
     time_to_summarize: float
     time_to_calc_summary_score: float
     time_to_calc_faithfulness: float
@@ -56,6 +58,11 @@ class ExperimentResult(BaseModel):
 faithfulness_metric = Faithfulness(llm=judge_llm)
 summary_score_metric = SummaryScore(llm=judge_llm) #TODO use exapnsive llm LATER
 response_groundedness_metric = ResponseGroundedness(llm=judge_llm)
+
+semantic_similarity_scorer = evaluate.load('bertscore')
+rouge_scorer = evaluate.load('rouge')
+bleu_scorer = evaluate.load('bleu')
+
 
 @experiment(ExperimentResult, name_prefix="base_scores")
 async def get_summary_scores(row, summarizer, lock):
@@ -98,19 +105,12 @@ async def get_summary_scores(row, summarizer, lock):
     end = time.time()
     time_to_response_groundedness = end - start
 
-    rouge_scorer = evaluate.load('rouge')
     rouge = rouge_scorer.compute(predictions=[summary], references=[row['ground_truth']])
-
-    bleu_scorer = evaluate.load('bleu')
     bleu = bleu_scorer.compute(predictions=[summary], references=[row['ground_truth']])
-
-    semantic_similarity_scorer= evaluate.load('bertscore')
     semantic_similarity = semantic_similarity_scorer.compute(predictions=[summary],
                                                              references=[row['ground_truth']],
                                                              model_type="xlm-roberta-large",
                                                              lang="en")
-
-    print(semantic_similarity)
 
     return ExperimentResult(
         faithfulness_score=faith_result.value,
@@ -120,8 +120,10 @@ async def get_summary_scores(row, summarizer, lock):
         rouge2_score=rouge['rouge2'],
         rougeL_score=rouge['rougeL'],
         rougeLsum_score=rouge['rougeLsum'],
-        bleu_score=bleu.value,
-        semantic_similarity=semantic_similarity.value,
+        bleu_score=bleu['bleu'],
+        semantic_similarity_precision=semantic_similarity['precision'][0],
+        semantic_similarity_recall=semantic_similarity['recall'][0],
+        semantic_similarity_f1=semantic_similarity['f1'][0],
         time_to_summarize=time_to_summarize,
         time_to_calc_summary_score=time_to_calc_summary_score,
         time_to_calc_faithfulness=time_to_calc_faithfulness,
@@ -145,7 +147,9 @@ async def test_summarizer():
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
     bleu_score = exp_df['bleu_score'].mean()
-    semantic_similarity = exp_df['semantic_similarity'].mean()
+    semantic_similarity_precision = exp_df['semantic_similarity_precision'].mean()
+    semantic_similarity_recall = exp_df['semantic_similarity_recall'].mean()
+    semantic_similarity_f1 = exp_df['semantic_similarity_f1'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -155,7 +159,9 @@ async def test_summarizer():
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
     print('Bleu score mean ', bleu_score)
-    print('Semantic similarity mean ', semantic_similarity)
+    print('Semantic similarity precision mean ', semantic_similarity_precision)
+    print('Semantic similarity recall mean ', semantic_similarity_recall)
+    print('Semantic similarity f1 mean ', semantic_similarity_f1)
 
     assert faithfulness_score > 0.96
     assert summary_score > 0.99999
@@ -164,6 +170,10 @@ async def test_summarizer():
     assert rouge2_score > 0.37
     assert rougeL_score > 0.28
     assert rougeLsum_score > 0.28
+    assert bleu_score > 0.035
+    assert semantic_similarity_precision > 0.85
+    assert semantic_similarity_recall > 0.85
+    assert semantic_similarity_f1 > 0.85
 
 
 @pytest.mark.asyncio
@@ -181,7 +191,9 @@ async def test_missy_summarizer():
     rougeL_score = exp_df['rougeL_score'].mean()
     rougeLsum_score = exp_df['rougeLsum_score'].mean()
     bleu_score = exp_df['bleu_score'].mean()
-    semantic_similarity = exp_df['semantic_similarity'].mean()
+    semantic_similarity_precision = exp_df['semantic_similarity_precision'].mean()
+    semantic_similarity_recall = exp_df['semantic_similarity_recall'].mean()
+    semantic_similarity_f1 = exp_df['semantic_similarity_f1'].mean()
 
     print('Faithfulness mean ', faithfulness_score)
     print('Summary score mean ', summary_score)
@@ -191,7 +203,9 @@ async def test_missy_summarizer():
     print('RougeL score mean ', rougeL_score)
     print('RougeLsum score mean ', rougeLsum_score)
     print('Bleu score mean ', bleu_score)
-    print('Semantic similarity mean ', semantic_similarity)
+    print('Semantic similarity precision mean ', semantic_similarity_precision)
+    print('Semantic similarity recall mean ', semantic_similarity_recall)
+    print('Semantic similarity f1 mean ', semantic_similarity_f1)
 
     assert faithfulness_score > 0.82
     assert summary_score > 0.99999
@@ -200,6 +214,10 @@ async def test_missy_summarizer():
     assert rouge2_score > 0.3
     assert rougeL_score > 0.2
     assert rougeLsum_score > 0.2
+    assert bleu_score > 0.025
+    assert semantic_similarity_precision > 0.85
+    assert semantic_similarity_recall > 0.85
+    assert semantic_similarity_f1 > 0.85
 
 async def main():
     await test_summarizer()
