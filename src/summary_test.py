@@ -35,6 +35,19 @@ client = AsyncOpenAI(
 
 judge_llm = llm_factory(os.getenv("JUDGE_MODEL"), client=client, max_tokens=99000, temperature=0.0)
 
+
+YANDEX_CLOUD_FOLDER = "b1guh4po0k5p72m4h6t8"
+YANDEX_CLOUD_API_KEY = os.getenv("EXPENSIVE_JUDGE_API_KEY")
+YANDEX_CLOUD_MODEL = "aliceai-llm/latest"
+
+expensive_client = AsyncOpenAI(
+    api_key=YANDEX_CLOUD_API_KEY,
+    base_url="https://ai.api.cloud.yandex.net/v1",
+    project=YANDEX_CLOUD_FOLDER,
+)
+
+expensive_judge_llm = llm_factory(f"gpt://{YANDEX_CLOUD_FOLDER}/{YANDEX_CLOUD_MODEL}", client=expensive_client, max_tokens=99000, temperature=0.0)
+
 class ExperimentResult(BaseModel):
     faithfulness_score: float
     summary_score: float
@@ -56,7 +69,7 @@ class ExperimentResult(BaseModel):
 
 
 faithfulness_metric = Faithfulness(llm=judge_llm)
-summary_score_metric = SummaryScore(llm=judge_llm) #TODO use exapnsive llm LATER
+summary_score_metric = SummaryScore(llm=expensive_judge_llm)
 response_groundedness_metric = ResponseGroundedness(llm=judge_llm)
 
 semantic_similarity_scorer = evaluate.load('bertscore')
@@ -74,13 +87,12 @@ async def get_summary_scores(row, summarizer, lock):
     time_to_summarize = end - start
 
     start = time.time()
-    #TODO: uncomment, when ready. It is very expensive
-    #summary_score_result_waiter = summary_score.ascore(
-    #    reference_contexts=[row['context']],
-    #    response=summary,
-    #)
+    summary_score_result_waiter = summary_score_metric.ascore(
+        reference_contexts=[row['context']],
+        response=summary,
+    )
 
-    #summary_score_result = await summary_score_result_waiter
+    summary_score_result = await summary_score_result_waiter
     end = time.time()
     time_to_calc_summary_score = end - start
 
@@ -114,7 +126,7 @@ async def get_summary_scores(row, summarizer, lock):
 
     return ExperimentResult(
         faithfulness_score=faith_result.value,
-        summary_score=1.0,#summary_score_result.value, #TODO: Uncomment before prod
+        summary_score=summary_score_result.value,
         response_groundedness_score=response_groundedness_result.value,
         rouge1_score=rouge['rouge1'],
         rouge2_score=rouge['rouge2'],
