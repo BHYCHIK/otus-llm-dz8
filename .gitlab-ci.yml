@@ -6,6 +6,7 @@ variables:
   PYTHONDONTWRITEBYTECODE: "1"
   PYTHONUNBUFFERED: "1"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  HF_HOME: "$CI_PROJECT_DIR/.cache/huggingface"
 
 default:
   image: python:3.13-slim
@@ -16,7 +17,6 @@ default:
           - requirements.txt
       paths:
         - .cache/pip/
-        - .cache/huggingface/
     - key: "hf-cache-xlm-roberta-large"
       paths:
         - .cache/huggingface/
