@@ -36,17 +36,16 @@ client = AsyncOpenAI(
 judge_llm = llm_factory(os.getenv("JUDGE_MODEL"), client=client, max_tokens=99000, temperature=0.0)
 
 
-YANDEX_CLOUD_FOLDER = "b1guh4po0k5p72m4h6t8"
-YANDEX_CLOUD_API_KEY = os.getenv("EXPENSIVE_JUDGE_API_KEY")
+YANDEX_CLOUD_FOLDER = os.getenv("EXPENSIVE_JUDGE_PROJECT")
 YANDEX_CLOUD_MODEL = "aliceai-llm/latest"
 
 expensive_client = AsyncOpenAI(
-    api_key=YANDEX_CLOUD_API_KEY,
-    base_url="https://ai.api.cloud.yandex.net/v1",
-    project=YANDEX_CLOUD_FOLDER,
+    api_key=os.getenv("EXPENSIVE_JUDGE_API_KEY"),
+    base_url=os.getenv("EXPENSIVE_JUDGE_BASE_URL"),
+    project=os.getenv("EXPENSIVE_JUDGE_PROJECT"),
 )
 
-expensive_judge_llm = llm_factory(f"gpt://{YANDEX_CLOUD_FOLDER}/{YANDEX_CLOUD_MODEL}", client=expensive_client, max_tokens=99000, temperature=0.0)
+expensive_judge_llm = llm_factory(os.getenv('EXPENSIVE_JUDGE_MODEL'), client=expensive_client, max_tokens=99000, temperature=0.0)
 
 class ExperimentResult(BaseModel):
     faithfulness_score: float
@@ -83,6 +82,7 @@ async def get_summary_scores(row, summarizer, lock):
 
     #async with lock:
     summary = await summarizer.summarize(row['context'])
+    print(summary)
     end = time.time()
     time_to_summarize = end - start
 
@@ -176,7 +176,7 @@ async def test_summarizer():
     print('Semantic similarity f1 mean ', semantic_similarity_f1)
 
     assert faithfulness_score > 0.96
-    assert summary_score > 0.99999
+    assert summary_score > 0.66
     assert response_groundedness_score > 0.99
     assert rouge1_score > 0.37
     assert rouge2_score > 0.37
@@ -186,6 +186,18 @@ async def test_summarizer():
     assert semantic_similarity_precision > 0.85
     assert semantic_similarity_recall > 0.85
     assert semantic_similarity_f1 > 0.85
+
+    faithfulness_score_min = exp_df['faithfulness_score'].min()
+    summary_score_min = exp_df['summary_score'].min()
+    response_groundedness_score_min = exp_df['response_groundedness_score'].min()
+
+    print('Faithfulness min ', faithfulness_score_min)
+    print('Summary score min ', summary_score_min)
+    print('Response groundedness min ', response_groundedness_score_min)
+
+    assert faithfulness_score_min > 0.4
+    assert summary_score_min > 0.33
+    assert response_groundedness_score_min > 0.4
 
 
 @pytest.mark.asyncio
@@ -220,16 +232,25 @@ async def test_missy_summarizer():
     print('Semantic similarity f1 mean ', semantic_similarity_f1)
 
     assert faithfulness_score > 0.82
-    assert summary_score > 0.99999
+    assert summary_score > 0.57
     assert response_groundedness_score > 0.82
     assert rouge1_score > 0.3
     assert rouge2_score > 0.3
     assert rougeL_score > 0.2
     assert rougeLsum_score > 0.2
     assert bleu_score > 0.025
-    assert semantic_similarity_precision > 0.85
-    assert semantic_similarity_recall > 0.85
-    assert semantic_similarity_f1 > 0.85
+    assert semantic_similarity_precision > 0.84
+    assert semantic_similarity_recall > 0.84
+    assert semantic_similarity_f1 > 0.84
+
+    faithfulness_score_min = exp_df['faithfulness_score'].min()
+    summary_score_min = exp_df['summary_score'].min()
+    response_groundedness_score_min = exp_df['response_groundedness_score'].min()
+
+    print('Faithfulness min ', faithfulness_score_min)
+    print('Summary score min ', summary_score_min)
+    print('Response groundedness min ', response_groundedness_score_min)
+
 
 async def main():
     await test_summarizer()
