@@ -82,7 +82,6 @@ async def get_summary_scores(row, summarizer, lock):
 
     #async with lock:
     summary = await summarizer.summarize(row['context'])
-    print(summary)
     end = time.time()
     time_to_summarize = end - start
 
