@@ -1,5 +1,6 @@
 stages:
   - test
+  - deploy
 
 variables:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
@@ -39,3 +40,14 @@ test:
       - report.xml
       - data/experiments/base_scores-base_summarizer.csv
       - data/experiments/base_scores-missy_summarizer.csv
+
+statanalysis:
+  stage: test
+  script:
+    - pip install ruff
+    - ruff check src/ -v
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploy stub"

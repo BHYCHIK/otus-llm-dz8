@@ -194,9 +194,9 @@ async def test_summarizer():
     print('Summary score min ', summary_score_min)
     print('Response groundedness min ', response_groundedness_score_min)
 
-    assert faithfulness_score_min > 0.4
+    assert faithfulness_score_min > 0.89
     assert summary_score_min > 0.33
-    assert response_groundedness_score_min > 0.4
+    assert response_groundedness_score_min > 0.92
 
 
 @pytest.mark.asyncio
@@ -249,6 +249,10 @@ async def test_missy_summarizer():
     print('Faithfulness min ', faithfulness_score_min)
     print('Summary score min ', summary_score_min)
     print('Response groundedness min ', response_groundedness_score_min)
+
+    assert faithfulness_score_min > 0.4
+    assert summary_score_min > 0.33
+    assert response_groundedness_score_min > 0.4
 
 
 async def main():
